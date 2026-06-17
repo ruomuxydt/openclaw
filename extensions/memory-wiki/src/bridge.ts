@@ -272,7 +272,9 @@ export async function syncMemoryWikiBridgeSources(params: {
   const skippedCount = results.filter((result) => !result.changed).length;
   const pagePaths = results
     .map((result) => result.pagePath)
-    .toSorted((left, right) => left.localeCompare(right));
+    .toSorted((left, right) =>
+      left.localeCompare(right, "en", { sensitivity: "base", numeric: true }),
+    );
 
   if (importedCount > 0 || updatedCount > 0 || removedCount > 0) {
     await appendMemoryWikiLog(params.config.vault.path, {
