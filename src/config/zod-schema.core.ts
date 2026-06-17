@@ -886,7 +886,15 @@ export const RetryConfigSchema = z
     attempts: z.number().int().min(1).optional(),
     minDelayMs: z.number().int().min(0).optional(),
     maxDelayMs: z.number().int().min(0).optional(),
-    jitter: z.number().min(0).max(1).optional(),
+    /**
+     * Retry jitter as a fraction in [0, 1]. Legacy boolean values are coerced
+     * (true → 0.1, false → 0) so a stray boolean no longer fails validation
+     * and crashes gateway startup on every restart. See #52130.
+     */
+    jitter: z.preprocess(
+      (value) => (value === true ? 0.1 : value === false ? 0 : value),
+      z.number().min(0).max(1).optional(),
+    ),
   })
   .strict()
   .optional();
