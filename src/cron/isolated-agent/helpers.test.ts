@@ -243,10 +243,10 @@ describe("resolveCronPayloadOutcome", () => {
     });
     // The recovered run should not be fatal
     expect(result.hasFatalErrorPayload).toBe(false);
-    // Output fields should reflect the successful recovery, not the formatted run-level error
-    expect(result.summary).toBe("Patch applied successfully.");
-    expect(result.outputText).toBe("Patch applied successfully.");
-    expect(result.deliveryPayloads).toEqual([{ text: "Patch applied successfully." }]);
+    // Output fields should reflect the recovered answer (final assistant text), not the formatted run-level error
+    expect(result.summary).toContain("REPRO_FINAL_OUTPUT_PRESENT");
+    expect(result.outputText).toContain("REPRO_FINAL_OUTPUT_PRESENT");
+    expect(result.deliveryPayloads).toEqual([{ text: "REPRO_FINAL_OUTPUT_PRESENT" }]);
   });
 
   it("still treats a genuine fatal error as fatal when no recovery occurs", () => {
@@ -293,6 +293,21 @@ describe("resolveCronPayloadOutcome", () => {
     });
     expect(result.hasFatalErrorPayload).toBe(false);
     expect(result.summary).toContain("Task completed despite missing file.");
+  });
+
+  it("delivers the recovered answer for no-preference channels when finalAssistantVisibleText exists", () => {
+    // No preferFinalAssistantVisibleText (default false) — recovered tool-warning should still use the final answer
+    const result = resolveCronPayloadOutcome({
+      payloads: [
+        { text: "⚠️ 🛠️ sed: file missing", isError: true },
+      ],
+      runLevelError: new Error("sed: file missing"),
+      finalAssistantVisibleText: "Task completed despite missing file.",
+    });
+    expect(result.hasFatalErrorPayload).toBe(false);
+    expect(result.summary).toContain("Task completed despite missing file.");
+    expect(result.outputText).toContain("Task completed despite missing file.");
+    expect(result.deliveryPayloads).toEqual([{ text: "Task completed despite missing file." }]);
   });
 
   it("preserves original error payload text for generic fatal run-level errors with later success", () => {

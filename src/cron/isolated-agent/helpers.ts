@@ -309,10 +309,11 @@ export function resolveCronPayloadOutcome(params: {
   // A final assistant answer can replace textual warning payloads, but never
   // structured/media payloads that carry the actual delivery content.
   const shouldUseFinalAssistantVisibleText =
-    params.preferFinalAssistantVisibleText === true &&
     normalizedFinalAssistantVisibleText !== undefined &&
     !hasFatalStructuredErrorPayload &&
-    !hasStructuredDeliveryPayloads;
+    !hasStructuredDeliveryPayloads &&
+    (params.preferFinalAssistantVisibleText === true ||
+      (hasRecoveringTerminalOutput && isLastErrorAToolWarning));
   const summary = shouldUseFinalAssistantVisibleText
     ? (pickSummaryFromOutput(normalizedFinalAssistantVisibleText) ?? fallbackSummary)
     : fallbackSummary;
