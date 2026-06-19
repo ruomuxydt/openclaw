@@ -241,7 +241,12 @@ describe("resolveCronPayloadOutcome", () => {
       runLevelError: new Error("sed: can't read file"),
       finalAssistantVisibleText: "REPRO_FINAL_OUTPUT_PRESENT",
     });
+    // The recovered run should not be fatal
     expect(result.hasFatalErrorPayload).toBe(false);
+    // Output fields should reflect the successful recovery, not the formatted run-level error
+    expect(result.summary).toBe("Patch applied successfully.");
+    expect(result.outputText).toBe("Patch applied successfully.");
+    expect(result.deliveryPayloads).toEqual([{ text: "Patch applied successfully." }]);
   });
 
   it("still treats a genuine fatal error as fatal when no recovery occurs", () => {
