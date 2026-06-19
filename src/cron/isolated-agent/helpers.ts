@@ -327,10 +327,11 @@ export function resolveCronPayloadOutcome(params: {
         : [];
   const failureSignal = normalizeCronFailureSignal(params.failureSignal);
   const runLevelError = formatCronRunLevelError(params.runLevelError);
+  const isLastErrorAToolWarning = isCronToolWarning(lastErrorPayloadText);
   const hasFatalErrorPayload =
     hasFatalStructuredErrorPayload ||
     failureSignal !== undefined ||
-    (runLevelError !== undefined && !hasRecoveringTerminalOutput);
+    (runLevelError !== undefined && !(hasRecoveringTerminalOutput && isLastErrorAToolWarning));
   const structuredErrorText = hasFatalStructuredErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;

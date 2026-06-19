@@ -263,4 +263,16 @@ describe("resolveCronPayloadOutcome", () => {
     });
     expect(result.hasFatalErrorPayload).toBe(false);
   });
+
+  it("keeps a generic run-level error fatal even when later payloads succeed", () => {
+    // Non-tool-warning run-level error (e.g. connection refused) remains fatal
+    const result = resolveCronPayloadOutcome({
+      payloads: [
+        { text: "Fatal: connection refused", isError: true },
+        { text: "Retried and got partial result." },
+      ],
+      runLevelError: new Error("connection refused"),
+    });
+    expect(result.hasFatalErrorPayload).toBe(true);
+  });
 });
