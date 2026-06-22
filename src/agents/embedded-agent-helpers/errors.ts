@@ -964,6 +964,14 @@ export function isGenericUnknownStreamErrorMessage(raw: string): boolean {
   return /^\s*an unknown error occurred\.?\s*$/i.test(raw);
 }
 
+// HTTP/fetch layer emits "This operation was aborted" when a streaming connection
+// drops mid-response (e.g. Bedrock Converse after ~6 min on large payloads).
+// Treat as transient so the configured fallback chain rotates instead of
+// surfacing the bare abort string to the user (#87876).
+export function isStreamAbortErrorMessage(raw: string): boolean {
+  return /\bthis operation was aborted\b/i.test(raw);
+}
+
 function isOpenRouterProviderReturnedError(raw: string, provider?: string): boolean {
   return (
     isProvider(provider, "openrouter") &&
@@ -1065,6 +1073,9 @@ function classifyFailoverClassificationFromMessage(
     return toReasonClassification("auth");
   }
   if (isGenericUnknownStreamErrorMessage(raw)) {
+    return toReasonClassification("timeout");
+  }
+  if (isStreamAbortErrorMessage(raw)) {
     return toReasonClassification("timeout");
   }
   if (isOpenRouterProviderReturnedError(raw, provider)) {
