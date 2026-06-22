@@ -178,15 +178,15 @@ export function resolveRunFailoverDecision(params: RunFailoverDecisionParams): R
         reason: params.failoverReason,
       };
     }
-    // Harness-owned transports (Ollama, OpenRouter, ...) implement their own
-    // retry envelope, so a timeout should not double-rotate the auth profile.
-    // It must still honor an explicitly configured model fallback, though:
-    // falling back switches to a different model the operator chose for
-    // resilience, which is exactly what a prompt timeout should trigger.
+    // Harness-owned transports implement their own retry envelope. Plugin-harness
+    // lifecycle timeouts (aborted by the harness) keep the isolation policy from
+    // #86476 — they surface immediately so the harness owns the retry. A direct
+    // provider timeout (not aborted, e.g. Ollama HTTP timeout) still honors an
+    // explicitly configured model fallback (#95574).
     if (
       params.harnessOwnsTransport &&
       params.failoverReason === "timeout" &&
-      !(params.fallbackConfigured && params.failoverFailure)
+      (params.aborted || !(params.fallbackConfigured && params.failoverFailure))
     ) {
       return {
         action: "surface_error",

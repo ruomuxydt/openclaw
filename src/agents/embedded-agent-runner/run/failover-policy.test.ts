@@ -574,6 +574,27 @@ describe("resolveRunFailoverDecision", () => {
     });
   });
 
+  it("surfaces error on harness-owned plugin lifecycle timeout even with fallback (#86476)", () => {
+    // Plugin-harness lifecycle timeouts (aborted=true) keep isolation policy:
+    // the harness owns the retry, so OpenClaw should surface immediately even
+    // when a model fallback is configured.
+    expect(
+      resolveRunFailoverDecision({
+        stage: "prompt",
+        aborted: true,
+        externalAbort: false,
+        fallbackConfigured: true,
+        failoverFailure: true,
+        failoverReason: "timeout",
+        harnessOwnsTransport: true,
+        profileRotated: true,
+      }),
+    ).toEqual({
+      action: "surface_error",
+      reason: "timeout",
+    });
+  });
+
   it("surfaces error on LLM idle timeout when no fallback is configured and rotation is exhausted", () => {
     expect(
       resolveRunFailoverDecision({
