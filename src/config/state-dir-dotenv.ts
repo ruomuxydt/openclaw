@@ -127,6 +127,17 @@ export type DurableServiceEnvVarSources = {
   durableEnvironment: Record<string, string>;
 };
 
+/** Provider API key env vars that should be collected from the system environment
+ *  into durableEnvironment when not already present from .env or config.
+ *  Prevents them from being written as plaintext literals in generated service
+ *  files instead of being managed via OPENCLAW_SERVICE_MANAGED_ENV_KEYS (#95895). */
+const PROVIDER_ENV_API_KEYS = [
+  "GEMINI_API_KEY",
+  "GEMINI_API_KEYS",
+  "GEMINI_API_KEY_0",
+  "GOOGLE_API_KEY",
+] as const;
+
 /** Collects durable service env vars from state-dir `.env` and config, preserving each source. */
 export function collectDurableServiceEnvVarSources(params: {
   env: Record<string, string | undefined>;
@@ -134,12 +145,23 @@ export function collectDurableServiceEnvVarSources(params: {
 }): DurableServiceEnvVarSources {
   const stateDirDotEnvEnvironment = readStateDirDotEnvVars(params.env);
   const configEnvironment = collectConfigServiceEnvVars(params.config);
+  // Collect provider API keys from the system environment when not already present
+  // in .env or config. This prevents them from being written as plaintext literals
+  // in generated service files instead of being managed via OPENCLAW_SERVICE_MANAGED_ENV_KEYS.
+  const systemEnvProviderKeys: Record<string, string> = {};
+  for (const key of PROVIDER_ENV_API_KEYS) {
+    const value = params.env[key]?.trim();
+    if (value && !stateDirDotEnvEnvironment[key] && !configEnvironment[key]) {
+      systemEnvProviderKeys[key] = value;
+    }
+  }
   return {
     stateDirDotEnvEnvironment,
     configEnvironment,
     durableEnvironment: {
       ...stateDirDotEnvEnvironment,
       ...configEnvironment,
+      ...systemEnvProviderKeys,
     },
   };
 }
