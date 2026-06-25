@@ -1351,14 +1351,20 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
         }
       }
     };
+    const logPendingWorkError = (label: string) => (err: unknown) => {
+      log.warn(`memory manager close: pending ${label} failed: ${String(err)}`);
+    };
     const awaitCurrentSync = async () => {
       const pendingSync = this.syncing;
       if (!pendingSync) {
         return;
       }
-      await awaitPendingManagerWork({ pendingSync });
+      await awaitPendingManagerWork({ pendingSync, onError: logPendingWorkError("sync") });
     };
-    await awaitPendingManagerWork({ pendingProviderInit });
+    await awaitPendingManagerWork({
+      pendingProviderInit,
+      onError: logPendingWorkError("provider init"),
+    });
     rememberCurrentProvider();
     try {
       await awaitCurrentSync();

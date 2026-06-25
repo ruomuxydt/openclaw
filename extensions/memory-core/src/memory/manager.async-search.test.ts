@@ -72,6 +72,28 @@ describe("memory search async sync", () => {
     await closePromise;
   });
 
+  it("reports pending sync/provider errors via onError instead of swallowing", async () => {
+    const onError = vi.fn();
+    const syncError = new Error("sync failed");
+    const providerInitError = new Error("provider init failed");
+
+    await awaitPendingManagerWork({
+      pendingSync: Promise.reject(syncError),
+      pendingProviderInit: Promise.reject(providerInitError),
+      onError,
+    });
+
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenNthCalledWith(1, syncError);
+    expect(onError).toHaveBeenNthCalledWith(2, providerInitError);
+  });
+
+  it("does not throw when no onError is supplied (backwards compatible)", async () => {
+    await expect(
+      awaitPendingManagerWork({ pendingSync: Promise.reject(new Error("boom")) }),
+    ).resolves.toBeUndefined();
+  });
+
   it("skips background search sync when search-triggered sync is disabled", async () => {
     const syncMock = vi.fn(async () => {});
     await startAsyncSearchSync({
